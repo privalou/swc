@@ -1,8 +1,9 @@
-use swc::service::expense::{CreateExpenseSpec, ExpensesApi, User, ExpensesService, UpdateExpenseSpec};
 use futures::StreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
 use std::str::FromStr;
+use swc::service::expense::{CreateExpenseSpec, ExpensesApi, ExpensesService, UpdateExpenseSpec};
+use swc::service::user::User;
 use testcontainers::{clients, images};
 
 #[tokio::test]

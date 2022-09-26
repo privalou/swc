@@ -1,3 +1,4 @@
+use crate::service::user::User;
 use anyhow::Error;
 use async_trait::async_trait;
 use chrono::Utc;
@@ -51,7 +52,10 @@ impl ExpensesApi for ExpensesService {
         Ok(expense)
     }
 
-    async fn list_expenses(&self, _request: ListExpensesRequest) -> Result<ExpensesResponse, Error> {
+    async fn list_expenses(
+        &self,
+        _request: ListExpensesRequest,
+    ) -> Result<ExpensesResponse, Error> {
         let mut cursor = self.db.collection("expenses").find(None, None).await?;
         let mut expenses = Vec::new();
         while let Some(result) = cursor.next().await {
@@ -260,25 +264,6 @@ impl fmt::Display for RepeatInterval {
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct User {
-    #[serde(rename = "_id")]
-    pub id: Option<String>,
-
-    pub first_name: Option<String>,
-
-    pub email: Option<String>,
-
-    pub default_currency: Option<String>,
-
-    pub balance: Option<Vec<Balance>>,
-
-    pub groups: Option<Vec<GroupBalance>>,
-
-    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct GroupBalance {
     pub group_id: Option<i64>,
 
@@ -290,7 +275,6 @@ pub struct Balance {
     pub currency_code: Option<String>,
     pub amount: Option<String>,
 }
-
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
