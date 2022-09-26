@@ -2,7 +2,6 @@ use std::env;
 use tokio::io;
 use dotenv::dotenv;
 
-
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     match env::args().nth(1) {
