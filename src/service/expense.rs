@@ -65,6 +65,8 @@ impl ExpensesApi for ExpensesService {
         Ok(ExpensesResponse { expenses })
     }
 
+    /// Create a new expense. expense is saved to the dedicated collection and record in the balance
+    /// collection is updated
     async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<String, Error> {
         let share = UserShare {
             user: Some(expense.user.clone()),
