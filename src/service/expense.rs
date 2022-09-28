@@ -1,4 +1,3 @@
-use crate::service::user::User;
 use anyhow::Error;
 use async_trait::async_trait;
 use chrono::Utc;
@@ -11,7 +10,7 @@ use std::str::FromStr;
 use tokio_stream::StreamExt;
 
 #[derive(Debug, Clone)]
-pub struct ExpensesService {
+pub struct ExpenseApiMongoAdapter {
     pub db: Database,
 }
 
@@ -29,14 +28,14 @@ pub trait ExpensesApi {
     async fn restore_expense(&self, id: i64) -> Result<(), Error>;
 }
 
-impl ExpensesService {
+impl ExpenseApiMongoAdapter {
     pub fn new(db: Database) -> Self {
         Self { db }
     }
 }
 
 #[async_trait]
-impl ExpensesApi for ExpensesService {
+impl ExpensesApi for ExpenseApiMongoAdapter {
     async fn get_expense(&self, id: String) -> Result<Expense, Error> {
         let docs = self
             .db
@@ -339,6 +338,23 @@ pub struct UserShare {
     pub owed_share: Option<String>,
 
     pub net_balance: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct User {
+    #[serde(rename = "_id")]
+    pub id: Option<String>,
+
+    pub first_name: Option<String>,
+
+    pub email: Option<String>,
+
+    pub default_currency: Option<String>,
+
+    pub balance: Option<Vec<Balance>>,
+
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 mod test {

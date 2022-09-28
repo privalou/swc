@@ -2,8 +2,9 @@ use futures::StreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
 use std::str::FromStr;
-use swc::service::expense::{CreateExpenseSpec, ExpensesApi, ExpensesService, UpdateExpenseSpec};
-use swc::service::user::User;
+use swc::service::expense::{
+    CreateExpenseSpec, ExpenseApiMongoAdapter, ExpensesApi, UpdateExpenseSpec, User,
+};
 use testcontainers::{clients, images};
 
 #[tokio::test]
@@ -17,7 +18,7 @@ async fn create_new_transaction() {
         .unwrap()
         .database("bot_test_db");
 
-    let expense_service = ExpensesService::new(database.clone());
+    let expense_service = ExpenseApiMongoAdapter::new(database.clone());
 
     expense_service
         .create_expense(CreateExpenseSpec {
@@ -69,7 +70,7 @@ async fn update_only_non_none_fields_of_expense() {
         .unwrap()
         .database("bot_test_db");
 
-    let expense_service = ExpensesService::new(database.clone());
+    let expense_service = ExpenseApiMongoAdapter::new(database.clone());
 
     let id = expense_service
         .create_expense(CreateExpenseSpec {
