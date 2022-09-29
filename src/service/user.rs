@@ -4,14 +4,22 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
 #[async_trait]
 pub trait UserApi {
     async fn get_user(&self, id: i32) -> Result<User, Error>;
-    async fn create_user(&self, user: User) -> Result<String, Error>;
+    async fn create_user(&self, user: CreateUserSpec) -> Result<String, Error>;
 }
 
-struct UserApiMongoAdapter {
+#[derive(Debug)]
+pub struct UserApiMongoAdapter {
     db: mongodb::Database,
+}
+
+impl UserApiMongoAdapter {
+    pub fn new(db: mongodb::Database) -> Self {
+        Self { db }
+    }
 }
 
 #[async_trait]
@@ -24,8 +32,13 @@ impl UserApi for UserApiMongoAdapter {
         Ok(user.expect("User not found"))
     }
 
-    async fn create_user(&self, user: User) -> Result<String, Error> {
+    async fn create_user(&self, create_spec: CreateUserSpec) -> Result<String, Error> {
         let collection = self.db.collection("users");
+        let user = User {
+            id: None,
+            first_name: Some(create_spec.first_name),
+            ..User::default()
+        };
         let user = collection.insert_one(user, None).await?;
         Ok(user.inserted_id.to_string())
     }
@@ -34,7 +47,7 @@ impl UserApi for UserApiMongoAdapter {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-    #[serde(rename = "_id")]
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
 
     pub first_name: Option<String>,
@@ -61,4 +74,11 @@ pub struct GroupBalance {
     pub group_id: Option<i64>,
 
     pub balance: Option<Vec<Balance>>,
+}
+
+#[derive(Default, Debug)]
+pub struct CreateUserSpec {
+    pub first_name: String,
+    pub email: String,
+    pub default_currency: String,
 }
