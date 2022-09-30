@@ -3,7 +3,7 @@ on: [ push, pull_request ]
 name: Main flow
 
 env:
-  RUST_VERSION: nightly-2022-07-24
+  RUST_VERSION: nightly-2022-09-18
 
 jobs:
 
