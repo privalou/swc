@@ -42,13 +42,16 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             .collection::<Document>("expenses")
             .find_one(
                 doc! {
-                    "groupId": id.to_string(),
+                    "_id": ObjectId::from_str(&id).expect("Invalid id")
                 },
                 None,
             )
             .await?;
-        let expense: Expense = bson::from_bson(bson::Bson::Document(docs.unwrap()))?;
-        Ok(expense)
+        let document = docs.unwrap();
+        let expense: Result<Expense, _> = bson::from_document(document);
+        dbg!(&expense);
+
+        Ok(expense.unwrap())
     }
 
     async fn list_expenses(
@@ -82,11 +85,13 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             ..Expense::default()
         };
         let (expense, option) = (bson::to_document(&expense)?, None);
+        dbg!(&expense);
         let expense_created = self
             .db
             .collection("expenses")
             .insert_one(expense, option)
             .await?;
+        dbg!(&expense_created);
         Ok(expense_created.inserted_id.as_object_id().unwrap().to_hex())
     }
 
@@ -132,7 +137,7 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
 #[serde(rename_all = "camelCase")]
 pub struct Expense {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    pub id: Option<ObjectId>,
 
     pub cost: Option<String>,
 
@@ -308,11 +313,7 @@ pub struct UpdateExpenseSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency_code: Option<String>,
 
-    /// A category id from `get_categories`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub category_id: Option<i64>,
-
-    pub group_id: i64,
+    pub group_id: Option<String>,
 
     /// Users by share if not splitting the expense equally.
     #[serde(flatten)]
@@ -354,7 +355,7 @@ pub struct User {
 
     pub balance: Option<Vec<Balance>>,
 
-    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub updated_at: Option<chrono::DateTime<Utc>>,
 }
 
 mod test {
