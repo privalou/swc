@@ -4,11 +4,13 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use tokio_stream::StreamExt;
 
 #[async_trait]
 pub trait GroupApi {
     async fn get_group(&self, id: i32) -> Result<Group, Error>;
     async fn create_group(&self, group: CreateGroupSpec) -> Result<String, Error>;
+    async fn get_user_group(&self, user_id: String) -> Result<Vec<Group>, Error>;
 }
 
 #[derive(Debug)]
@@ -35,6 +37,25 @@ impl GroupApi for GroupApiMongoAdapter {
         };
         let group = collection.insert_one(group, None).await?;
         Ok(group.inserted_id.to_string())
+    }
+
+    async fn get_user_group(&self, user_id: String) -> Result<Vec<Group>, Error> {
+        let collection = self.db.collection::<mongodb::bson::Document>("groups");
+        let filter = doc! {
+            "members": {
+                "$elemMatch": {
+                    "user_id": user_id
+                }
+            }
+        };
+        let mut cursor = collection.find(filter, None).await?;
+
+        let mut groups = Vec::new();
+        while let Some(group) = cursor.try_next().await? {
+            let group: Group = mongodb::bson::from_document(group).unwrap();
+            groups.push(group);
+        }
+        Ok(groups)
     }
 }
 

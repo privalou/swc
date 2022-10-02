@@ -1,6 +1,4 @@
 use anyhow::Error;
-use futures::StreamExt;
-use mongodb::bson::Document;
 use swc::service::expense::{CreateExpenseSpec, ExpenseApiMongoAdapter, ExpensesApi};
 use swc::service::user::{CreateUserSpec, UserApi, UserApiMongoAdapter};
 use testcontainers::{clients, images};
@@ -22,9 +20,8 @@ async fn calculation_split_equally_for_three_users() {
 
     let user_service = UserApiMongoAdapter::new(database.clone());
 
-    let created_users_id = create_users(3, &user_service).await.unwrap();
+    let _created_users_id = create_users(3, &user_service).await.unwrap();
 
-    dbg!(created_users_id);
     let expense_service = ExpenseApiMongoAdapter::new(database.clone());
     let created_expense_id = expense_service
         .create_expense(CreateExpenseSpec {
@@ -39,18 +36,6 @@ async fn calculation_split_equally_for_three_users() {
         })
         .await
         .unwrap();
-
-    dbg!(&created_expense_id);
-
-    let mut cursor = database
-        .collection::<Document>("expenses")
-        .find(None, None)
-        .await
-        .unwrap();
-
-    while let Some(result) = cursor.next().await {
-        dbg!(result.unwrap());
-    }
 
     let expense = expense_service
         .get_expense(created_expense_id.clone())
@@ -71,16 +56,6 @@ async fn calculation_split_equally_for_three_users() {
         )
         .await
         .unwrap();
-
-    let mut cursor = database
-        .collection::<Document>("expenses")
-        .find(None, None)
-        .await
-        .unwrap();
-
-    while let Some(result) = cursor.next().await {
-        dbg!(result.unwrap());
-    }
 
     let updated_expense = expense_service
         .get_expense(created_expense_id.clone())

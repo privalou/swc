@@ -49,8 +49,6 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             .await?;
         let document = docs.unwrap();
         let expense: Result<Expense, _> = bson::from_document(document);
-        dbg!(&expense);
-
         Ok(expense.unwrap())
     }
 
@@ -85,13 +83,11 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             ..Expense::default()
         };
         let (expense, option) = (bson::to_document(&expense)?, None);
-        dbg!(&expense);
         let expense_created = self
             .db
             .collection("expenses")
             .insert_one(expense, option)
             .await?;
-        dbg!(&expense_created);
         Ok(expense_created.inserted_id.as_object_id().unwrap().to_hex())
     }
 
@@ -358,6 +354,48 @@ pub struct User {
     pub updated_at: Option<chrono::DateTime<Utc>>,
 }
 
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ExpenseCalculator {}
+
+impl ExpenseCalculator {
+    pub fn calculate_equal_share(
+        &self,
+        cost: String,
+        payer_id: String,
+        group: Vec<String>,
+    ) -> Vec<UserShare> {
+        let cost = cost.parse::<f64>().unwrap();
+        let common_share = cost / group.len() as f64;
+        let payer_net = cost - common_share;
+
+        let payer_share: UserShare = UserShare {
+            user_id: Some(payer_id.parse::<i64>().unwrap()),
+            paid_share: Some(format!("{0:.2}", cost)),
+            owed_share: Some(format!("{0:.2}", common_share)),
+            net_balance: Some(format!("{0:.2}", payer_net)),
+            ..Default::default()
+        };
+
+        let debt_net = common_share * -1_f64;
+        let remainder_share = group
+            .iter()
+            .filter(|&user_id| user_id != &payer_id)
+            .map(|user_id| {
+                let user_share: UserShare = UserShare {
+                    user_id: Some(user_id.parse::<i64>().unwrap()),
+                    paid_share: Some("0.00".to_string()),
+                    owed_share: Some(format!("{0:.2}", common_share)),
+                    net_balance: Some(format!("{0:.2}", debt_net)),
+                    ..Default::default()
+                };
+                user_share
+            })
+            .chain(std::iter::once(payer_share))
+            .collect::<Vec<UserShare>>();
+        remainder_share
+    }
+}
+
 mod test {
     #[test]
     fn display_repeat_interval() {
@@ -367,5 +405,31 @@ mod test {
         assert_eq!(format!("{}", RepeatInterval::Fortnightly), "fortnightly");
         assert_eq!(format!("{}", RepeatInterval::Monthly), "monthly");
         assert_eq!(format!("{}", RepeatInterval::Yearly), "yearly");
+    }
+
+    #[test]
+    fn equally_split_expense() {
+        use super::ExpenseCalculator;
+        let calculator = ExpenseCalculator::default();
+        let cost = "42.00".to_string();
+        let payer_id = "1".to_string();
+        let group = vec!["1".to_string(), "2".to_string(), "3".to_string()];
+        let result = calculator.calculate_equal_share(cost, payer_id, group);
+        assert_eq!(result.len(), 3);
+
+        let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();
+        assert_eq!(user1.paid_share, Some("42.00".to_string()));
+        assert_eq!(user1.owed_share, Some("14.00".to_string()));
+        assert_eq!(user1.net_balance, Some("28.00".to_string()));
+
+        let user2 = result.iter().find(|user| user.user_id == Some(2)).unwrap();
+        assert_eq!(user2.paid_share, Some("0.00".to_string()));
+        assert_eq!(user2.owed_share, Some("14.00".to_string()));
+        assert_eq!(user2.net_balance, Some("-14.00".to_string()));
+
+        let user3 = result.iter().find(|user| user.user_id == Some(3)).unwrap();
+        assert_eq!(user3.paid_share, Some("0.00".to_string()));
+        assert_eq!(user3.owed_share, Some("14.00".to_string()));
+        assert_eq!(user3.net_balance, Some("-14.00".to_string()));
     }
 }

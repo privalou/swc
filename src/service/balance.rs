@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use anyhow::Error;
+use async_trait::async_trait;
 use mongodb::bson;
 use mongodb::bson::{doc, Document};
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 pub trait BalanceApi {
     async fn get_user_balance(&self, user_id: String) -> Result<Balance, Error>;
 }
-
 
 #[derive(Debug)]
 pub struct BalanceApiMongoAdapter {
@@ -21,7 +20,7 @@ impl BalanceApi for BalanceApiMongoAdapter {
         let collection = self.db.collection::<Document>("balance");
         let filter = doc! {"user_id": user_id};
         let doc = collection.find_one(filter, None).await?.unwrap();
-        let balance: Balance  = bson::from_document(doc).unwrap();
+        let balance: Balance = bson::from_document(doc).unwrap();
         Ok(balance)
     }
 }
