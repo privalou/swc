@@ -364,7 +364,11 @@ impl ExpenseCalculator {
         payer_id: String,
         group: Vec<String>,
     ) -> Vec<UserShare> {
+        if group.is_empty() {
+            return vec![];
+        }
         let cost = cost.parse::<f64>().unwrap();
+        // we assume that the payer is a part of the group
         let common_share = cost / group.len() as f64;
         let payer_net = cost - common_share;
 
@@ -431,5 +435,21 @@ mod test {
         assert_eq!(user3.paid_share, Some("0.00".to_string()));
         assert_eq!(user3.owed_share, Some("14.00".to_string()));
         assert_eq!(user3.net_balance, Some("-14.00".to_string()));
+    }
+
+    #[test]
+    fn single_user_group_expense() {
+        use super::ExpenseCalculator;
+        let calculator = ExpenseCalculator::default();
+        let cost = "42.00".to_string();
+        let payer_id = "1".to_string();
+        let group = vec!["1".to_string()];
+        let result = calculator.calculate_equal_share(cost, payer_id, group);
+        assert_eq!(result.len(), 1);
+
+        let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();
+        assert_eq!(user1.paid_share, Some("42.00".to_string()));
+        assert_eq!(user1.owed_share, Some("42.00".to_string()));
+        assert_eq!(user1.net_balance, Some("0.00".to_string()));
     }
 }
