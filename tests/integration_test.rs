@@ -23,7 +23,7 @@ async fn calculation_split_equally_for_three_users() {
     let _created_users_id = create_users(3, &user_service).await.unwrap();
 
     let expense_service = ExpenseApiMongoAdapter::new(database.clone());
-    let created_expense_id = expense_service
+    let created_expense = expense_service
         .create_expense(CreateExpenseSpec {
             cost: "100".to_string(),
             group_id: "1".to_string(),
@@ -38,7 +38,7 @@ async fn calculation_split_equally_for_three_users() {
         .unwrap();
 
     let expense = expense_service
-        .get_expense(created_expense_id.clone())
+        .get_expense(created_expense.id.unwrap().to_hex())
         .await
         .unwrap();
 
@@ -50,15 +50,12 @@ async fn calculation_split_equally_for_three_users() {
     };
 
     expense_service
-        .update_expense(
-            (created_expense_id.clone()).to_string(),
-            update_expense_spec,
-        )
+        .update_expense(created_expense.id.unwrap().to_hex(), update_expense_spec)
         .await
         .unwrap();
 
     let updated_expense = expense_service
-        .get_expense(created_expense_id.clone())
+        .get_expense(created_expense.id.unwrap().to_hex())
         .await
         .unwrap();
 

@@ -18,7 +18,7 @@ pub struct ExpenseApiMongoAdapter {
 pub trait ExpensesApi {
     async fn get_expense(&self, id: String) -> Result<Expense, Error>;
     async fn list_expenses(&self, request: ListExpensesRequest) -> Result<ExpensesResponse, Error>;
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<String, Error>;
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error>;
     async fn update_expense(
         &self,
         id: String,
@@ -67,28 +67,20 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
 
     /// Create a new expense. expense is saved to the dedicated collection and record in the balance
     /// collection is updated
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<String, Error> {
-        let share = UserShare {
-            user: Some(expense.user.clone()),
-            paid_share: Some(expense.cost.clone()),
-            owed_share: Some(expense.cost.clone()),
-            net_balance: Some("0.0".to_string()),
-            ..UserShare::default()
-        };
-        let expense = Expense {
-            cost: Some(expense.cost),
-            group_id: Some(expense.group_id),
-            created_by: Some(expense.user),
-            users: Some(vec![share]),
-            ..Expense::default()
-        };
-        let (expense, option) = (bson::to_document(&expense)?, None);
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error> {
+        let expense = ExpensesCalculator::new()
+            .create_expense(&expense)
+            .expect("Can not create expense");
+        let (expense_document, option) = (bson::to_document(&expense)?, None);
         let expense_created = self
             .db
             .collection("expenses")
-            .insert_one(expense, option)
+            .insert_one(expense_document, option)
             .await?;
-        Ok(expense_created.inserted_id.as_object_id().unwrap().to_hex())
+        Ok(Expense {
+            id: Some(expense_created.inserted_id.as_object_id().unwrap()),
+            ..expense
+        })
     }
 
     /*
@@ -354,11 +346,49 @@ pub struct User {
     pub updated_at: Option<chrono::DateTime<Utc>>,
 }
 
-#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct ExpenseCalculator {}
+pub trait Expenses {
+    fn create_expense(&self, create_expense_spec: &CreateExpenseSpec) -> Result<Expense, Error>;
+}
 
-impl ExpenseCalculator {
-    pub fn calculate_equal_share(
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ExpensesCalculator {}
+
+impl ExpensesCalculator {
+    pub fn new() -> Self {
+        ExpensesCalculator {}
+    }
+}
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ShareCalculator {}
+
+impl Expenses for ExpensesCalculator {
+    fn create_expense(&self, create_expense_spec: &CreateExpenseSpec) -> Result<Expense, Error> {
+        let user = create_expense_spec.user.clone();
+        let share = ShareCalculator::new().equal_share(
+            create_expense_spec.cost.clone(),
+            user.id.clone().unwrap(),
+            Vec::new(),
+        );
+        Ok(Expense {
+            cost: Some(create_expense_spec.cost.clone()),
+            group_id: Some(create_expense_spec.group_id.parse()?),
+            users: Some(share),
+            created_at: Some(Utc::now()),
+            updated_at: Some(Utc::now()),
+            created_by: Some(user),
+            date: Some(Utc::now()),
+            ..Expense::default()
+        })
+    }
+}
+
+impl ShareCalculator {
+    pub fn new() -> Self {
+        ShareCalculator {}
+    }
+
+    pub fn equal_share(
         &self,
         cost: String,
         payer_id: String,
@@ -413,12 +443,12 @@ mod test {
 
     #[test]
     fn equally_split_expense() {
-        use super::ExpenseCalculator;
-        let calculator = ExpenseCalculator::default();
+        use super::ShareCalculator;
+        let calculator = ShareCalculator::default();
         let cost = "42.00".to_string();
         let payer_id = "1".to_string();
         let group = vec!["1".to_string(), "2".to_string(), "3".to_string()];
-        let result = calculator.calculate_equal_share(cost, payer_id, group);
+        let result = calculator.equal_share(cost, payer_id, group);
         assert_eq!(result.len(), 3);
 
         let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();
@@ -439,12 +469,12 @@ mod test {
 
     #[test]
     fn single_user_group_expense() {
-        use super::ExpenseCalculator;
-        let calculator = ExpenseCalculator::default();
+        use super::ShareCalculator;
+        let calculator = ShareCalculator::default();
         let cost = "42.00".to_string();
         let payer_id = "1".to_string();
         let group = vec!["1".to_string()];
-        let result = calculator.calculate_equal_share(cost, payer_id, group);
+        let result = calculator.equal_share(cost, payer_id, group);
         assert_eq!(result.len(), 1);
 
         let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();

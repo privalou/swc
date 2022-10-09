@@ -1,7 +1,5 @@
 use futures::StreamExt;
-use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
-use std::str::FromStr;
 use swc::service::expense::{
     CreateExpenseSpec, ExpenseApiMongoAdapter, ExpensesApi, UpdateExpenseSpec, User,
 };
@@ -72,7 +70,7 @@ async fn update_only_non_none_fields_of_expense() {
 
     let expense_service = ExpenseApiMongoAdapter::new(database.clone());
 
-    let id = expense_service
+    let expense = expense_service
         .create_expense(CreateExpenseSpec {
             cost: "100".to_string(),
             group_id: "1".to_string(),
@@ -86,11 +84,11 @@ async fn update_only_non_none_fields_of_expense() {
         .await
         .unwrap();
 
-    let object_id = ObjectId::from_str(id.as_str()).expect("Failed to parse object id");
+    let object_id = expense.id.expect("id must be set");
 
     expense_service
         .update_expense(
-            id.clone(),
+            object_id.to_hex(),
             UpdateExpenseSpec {
                 description: Some("test".to_string()),
                 ..UpdateExpenseSpec::default()
