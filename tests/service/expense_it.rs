@@ -6,7 +6,7 @@ use swc::service::expense::{
 use testcontainers::{clients, images};
 
 #[tokio::test]
-async fn create_new_transaction() {
+async fn create_new_expense() {
     let docker = clients::Cli::default();
     let node = docker.run(images::mongo::Mongo::default());
     let host_port = node.get_host_port_ipv6(27017);
@@ -61,8 +61,10 @@ async fn create_new_transaction() {
 async fn update_only_non_none_fields_of_expense() {
     let docker = clients::Cli::default();
     let node = docker.run(images::mongo::Mongo::default());
-    let host_port = node.get_host_port_ipv6(27017);
-    let url = format!("mongodb://localhost:{}/", host_port.to_string());
+    let url = format!(
+        "mongodb://localhost:{}/",
+        node.get_host_port_ipv6(27017).to_string()
+    );
     let database = mongodb::Client::with_uri_str(url)
         .await
         .unwrap()

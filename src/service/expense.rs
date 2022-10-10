@@ -314,7 +314,7 @@ pub struct UpdateExpenseSpec {
 pub struct UserShare {
     pub user: Option<User>,
 
-    pub user_id: Option<i64>,
+    pub user_id: Option<String>,
 
     pub first_name: Option<String>,
 
@@ -365,10 +365,11 @@ pub struct ShareCalculator {}
 impl Expenses for ExpensesCalculator {
     fn create_expense(&self, create_expense_spec: &CreateExpenseSpec) -> Result<Expense, Error> {
         let user = create_expense_spec.user.clone();
+        let payer_id = user.id.as_ref().expect("No user id");
         let share = ShareCalculator::new().equal_share(
             create_expense_spec.cost.clone(),
-            user.id.clone().unwrap(),
-            Vec::new(),
+            payer_id.clone(),
+            vec![payer_id.clone()],
         );
         Ok(Expense {
             cost: Some(create_expense_spec.cost.clone()),
@@ -403,7 +404,7 @@ impl ShareCalculator {
         let payer_net = cost - common_share;
 
         let payer_share: UserShare = UserShare {
-            user_id: Some(payer_id.parse::<i64>().unwrap()),
+            user_id: Some(payer_id.clone()),
             paid_share: Some(format!("{0:.2}", cost)),
             owed_share: Some(format!("{0:.2}", common_share)),
             net_balance: Some(format!("{0:.2}", payer_net)),
@@ -416,7 +417,7 @@ impl ShareCalculator {
             .filter(|&user_id| user_id != &payer_id)
             .map(|user_id| {
                 let user_share: UserShare = UserShare {
-                    user_id: Some(user_id.parse::<i64>().unwrap()),
+                    user_id: Some(user_id.clone()),
                     paid_share: Some("0.00".to_string()),
                     owed_share: Some(format!("{0:.2}", common_share)),
                     net_balance: Some(format!("{0:.2}", debt_net)),
@@ -451,24 +452,33 @@ mod test {
         let result = calculator.equal_share(cost, payer_id, group);
         assert_eq!(result.len(), 3);
 
-        let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();
+        let user1 = result
+            .iter()
+            .find(|user| user.user_id == Some("1".to_string()))
+            .unwrap();
         assert_eq!(user1.paid_share, Some("42.00".to_string()));
         assert_eq!(user1.owed_share, Some("14.00".to_string()));
         assert_eq!(user1.net_balance, Some("28.00".to_string()));
 
-        let user2 = result.iter().find(|user| user.user_id == Some(2)).unwrap();
+        let user2 = result
+            .iter()
+            .find(|user| user.user_id == Some("2".to_string()))
+            .unwrap();
         assert_eq!(user2.paid_share, Some("0.00".to_string()));
         assert_eq!(user2.owed_share, Some("14.00".to_string()));
         assert_eq!(user2.net_balance, Some("-14.00".to_string()));
 
-        let user3 = result.iter().find(|user| user.user_id == Some(3)).unwrap();
+        let user3 = result
+            .iter()
+            .find(|user| user.user_id == Some("3".to_string()))
+            .unwrap();
         assert_eq!(user3.paid_share, Some("0.00".to_string()));
         assert_eq!(user3.owed_share, Some("14.00".to_string()));
         assert_eq!(user3.net_balance, Some("-14.00".to_string()));
     }
 
     #[test]
-    fn single_user_group_expense() {
+    fn single_user_group_share() {
         use super::ShareCalculator;
         let calculator = ShareCalculator::default();
         let cost = "42.00".to_string();
@@ -477,9 +487,90 @@ mod test {
         let result = calculator.equal_share(cost, payer_id, group);
         assert_eq!(result.len(), 1);
 
-        let user1 = result.iter().find(|user| user.user_id == Some(1)).unwrap();
+        let user1 = result
+            .iter()
+            .find(|user| user.user_id == Some("1".to_string()))
+            .unwrap();
         assert_eq!(user1.paid_share, Some("42.00".to_string()));
         assert_eq!(user1.owed_share, Some("42.00".to_string()));
         assert_eq!(user1.net_balance, Some("0.00".to_string()));
+    }
+
+    #[test]
+    fn multiple_user_group_share() {
+        use super::ShareCalculator;
+        let calculator = ShareCalculator::default();
+        let cost = "42.00".to_string();
+        let payer_id = "1".to_string();
+        let group = vec![
+            "1".to_string(),
+            "2".to_string(),
+            "3".to_string(),
+            "4".to_string(),
+        ];
+        let result = calculator.equal_share(cost, payer_id, group);
+        assert_eq!(result.len(), 4);
+
+        let user1 = result
+            .iter()
+            .find(|user| user.user_id == Some("1".to_string()))
+            .unwrap();
+        assert_eq!(user1.paid_share, Some("42.00".to_string()));
+        assert_eq!(user1.owed_share, Some("10.50".to_string()));
+        assert_eq!(user1.net_balance, Some("31.50".to_string()));
+
+        let user2 = result
+            .iter()
+            .find(|user| user.user_id == Some("2".to_string()))
+            .unwrap();
+        assert_eq!(user2.paid_share, Some("0.00".to_string()));
+        assert_eq!(user2.owed_share, Some("10.50".to_string()));
+        assert_eq!(user2.net_balance, Some("-10.50".to_string()));
+
+        let user3 = result
+            .iter()
+            .find(|user| user.user_id == Some("3".to_string()))
+            .unwrap();
+        assert_eq!(user3.paid_share, Some("0.00".to_string()));
+        assert_eq!(user3.owed_share, Some("10.50".to_string()));
+        assert_eq!(user3.net_balance, Some("-10.50".to_string()));
+
+        let user4 = result
+            .iter()
+            .find(|user| user.user_id == Some("4".to_string()))
+            .unwrap();
+        assert_eq!(user4.paid_share, Some("0.00".to_string()));
+        assert_eq!(user4.owed_share, Some("10.50".to_string()));
+        assert_eq!(user4.net_balance, Some("-10.50".to_string()));
+    }
+
+    #[test]
+    fn create_expense() {
+        use super::{ExpensesCalculator, CreateExpenseSpec, User, Expenses};
+        let calculator = ExpensesCalculator::new();
+        let expense = calculator
+            .create_expense(&CreateExpenseSpec {
+                cost: "42.00".to_string(),
+                group_id: "1".to_string(),
+                user: User {
+                    id: Some("1".to_string()),
+                    ..Default::default()
+                },
+            })
+            .expect("Failed to create expense");
+        assert_eq!(expense.cost, Some("42.00".to_string()));
+        assert_eq!(expense.group_id, Some("1".to_string()));
+        assert_eq!(
+            expense.created_by.expect("Expected user").id,
+            Some("1".to_string())
+        );
+        let shares = expense.users.expect("No Share Found For Expense");
+        dbg!(&shares);
+        assert_eq!(shares.len(), 1);
+        let share = shares.first();
+        assert_eq!(share.unwrap().user_id, Some("1".to_string()));
+        assert_eq!(share.unwrap().paid_share, Some("42.00".to_string()));
+        assert_eq!(share.unwrap().owed_share, Some("42.00".to_string()));
+        assert_eq!(share.unwrap().net_balance, Some("0.00".to_string()));
     }
 }
