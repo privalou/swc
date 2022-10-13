@@ -9,13 +9,19 @@ use tokio_stream::StreamExt;
 #[async_trait]
 pub trait GroupApi {
     async fn get_group(&self, id: i32) -> Result<Group, Error>;
-    async fn create_group(&self, group: CreateGroupSpec) -> Result<String, Error>;
+    async fn create_group(&self, group: CreateGroupSpec) -> Result<Group, Error>;
     async fn get_user_group(&self, user_id: String) -> Result<Vec<Group>, Error>;
 }
 
 #[derive(Debug)]
 pub struct GroupApiMongoAdapter {
     db: mongodb::Database,
+}
+
+impl GroupApiMongoAdapter {
+    pub fn new(db: mongodb::Database) -> Self {
+        Self { db }
+    }
 }
 
 #[async_trait]
@@ -28,15 +34,19 @@ impl GroupApi for GroupApiMongoAdapter {
         Ok(group.expect("Group not found"))
     }
 
-    async fn create_group(&self, create_spec: CreateGroupSpec) -> Result<String, Error> {
+    async fn create_group(&self, create_spec: CreateGroupSpec) -> Result<Group, Error> {
         let collection = self.db.collection("groups");
         let group = Group {
             id: None,
             name: Some(create_spec.name),
             ..Group::default()
         };
-        let group = collection.insert_one(group, None).await?;
-        Ok(group.inserted_id.to_string())
+        let inserted_group = collection.insert_one(group.clone(), None).await?;
+        let group = Group {
+            id: Some(inserted_group.inserted_id.as_object_id().unwrap().to_hex()),
+            ..group
+        };
+        Ok(group)
     }
 
     async fn get_user_group(&self, user_id: String) -> Result<Vec<Group>, Error> {
@@ -144,7 +154,7 @@ pub struct CreateGroupSpec {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GroupUser {
-    pub user_id: Option<i64>,
+    pub user_id: i64,
 
     pub first_name: Option<String>,
 }

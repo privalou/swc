@@ -546,7 +546,7 @@ mod test {
 
     #[test]
     fn create_expense() {
-        use super::{ExpensesCalculator, CreateExpenseSpec, User, Expenses};
+        use super::{CreateExpenseSpec, Expenses, ExpensesCalculator, User};
         let calculator = ExpensesCalculator::new();
         let expense = calculator
             .create_expense(&CreateExpenseSpec {
@@ -565,7 +565,6 @@ mod test {
             Some("1".to_string())
         );
         let shares = expense.users.expect("No Share Found For Expense");
-        dbg!(&shares);
         assert_eq!(shares.len(), 1);
         let share = shares.first();
         assert_eq!(share.unwrap().user_id, Some("1".to_string()));

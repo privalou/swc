@@ -59,7 +59,7 @@ async fn calculation_split_equally_for_three_users() {
         .await
         .unwrap();
 
-    dbg!(updated_expense);
+    assert_eq!(updated_expense.cost, Some("30".to_string()));
 }
 
 async fn create_users(
