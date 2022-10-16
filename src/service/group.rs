@@ -85,7 +85,6 @@ pub struct Group {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
 
-    /// Group name.
     pub name: Option<String>,
 
     /// What is the group used for? One of:
@@ -98,32 +97,24 @@ pub struct Group {
     /// Timestamp of when the group was last updated.
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 
-    /// Turn on simplify debts?
     pub simplify_by_default: Option<bool>,
 
-    /// List of users that are members of the group.
     pub members: Option<Vec<User>>,
 
-    /// List of debts between users in the group.
     pub original_debts: Option<Vec<Debt>>,
 
-    /// List of simplified debts between users in the group.
     pub simplified_debts: Option<Vec<Debt>>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-    /// User ID.
     pub id: Option<String>,
 
-    /// User's first name.
     pub first_name: Option<String>,
 
-    /// User's last name.
     pub last_name: Option<String>,
 
-    /// User's email address.
     pub email: Option<String>,
 
     /// User's registration status. One of:
@@ -165,10 +156,8 @@ pub struct Debt {
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGroupSpec {
-    /// Group name.
     pub name: String,
 
-    /// List of users to invite to the group.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub users: Option<Vec<GroupUser>>,
 }

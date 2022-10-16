@@ -84,9 +84,6 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
         })
     }
 
-    /*
-     * Update expense by id only non-null fields
-     */
     async fn update_expense(
         &self,
         id: String,
@@ -390,6 +387,7 @@ impl ShareCalculator {
         ShareCalculator {}
     }
 
+    //noinspection RsBorrowChecker
     pub fn equal_share(
         &self,
         cost: String,
