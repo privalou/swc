@@ -1,6 +1,7 @@
 use anyhow::Error;
 use async_trait::async_trait;
-use chrono::Utc;
+
+use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
 use mongodb::{bson, Database};
@@ -131,7 +132,7 @@ pub struct Expense {
 
     pub description: Option<String>,
 
-    pub date: Option<chrono::DateTime<Utc>>,
+    pub date: Option<DateTime<Utc>>,
 
     pub repeat_interval: Option<RepeatInterval>,
 
@@ -155,19 +156,19 @@ pub struct Expense {
     pub repayments: Option<Vec<Debt>>,
 
     /// The date and time the expense was created on Splitwise.
-    pub created_at: Option<chrono::DateTime<Utc>>,
+    pub created_at: Option<DateTime<Utc>>,
 
     /// User that created the expense.
     pub created_by: Option<User>,
 
     /// The last time the expense was updated.
-    pub updated_at: Option<chrono::DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
 
     /// User that updated the expense.
     pub updated_by: Option<User>,
 
     /// If the expense was deleted, when it was deleted.
-    pub deleted_at: Option<chrono::DateTime<Utc>>,
+    pub deleted_at: Option<DateTime<Utc>>,
 
     pub deleted_by: Option<User>,
 
@@ -201,16 +202,16 @@ pub struct ListExpensesRequest {
     pub friend_id: Option<i64>,
 
     /// Filter to expenses after this date.
-    pub dated_after: Option<chrono::DateTime<Utc>>,
+    pub dated_after: Option<DateTime<Utc>>,
 
     /// Filter to expenses before this date.
-    pub dated_before: Option<chrono::DateTime<Utc>>,
+    pub dated_before: Option<DateTime<Utc>>,
 
     /// Filter to expenses updated after this date.
-    pub updated_after: Option<chrono::DateTime<Utc>>,
+    pub updated_after: Option<DateTime<Utc>>,
 
     /// Filter to expenses updated before this date.
-    pub updated_before: Option<chrono::DateTime<Utc>>,
+    pub updated_before: Option<DateTime<Utc>>,
 
     /// Maximum number of expenses to return.
     /// Default: `20`
@@ -285,7 +286,7 @@ pub struct UpdateExpenseSpec {
 
     /// The date and time the expense took place. May differ from `created_at`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub date: Option<chrono::DateTime<Utc>>,
+    pub date: Option<DateTime<Utc>>,
 
     // TODO: Make this an enum
     /// Cadence at which the expense repeats. One of:
@@ -343,7 +344,7 @@ pub struct User {
 
     pub balance: Option<Vec<Balance>>,
 
-    pub updated_at: Option<chrono::DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 pub trait Expenses {

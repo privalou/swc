@@ -2,6 +2,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
+use mongodb::Client;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use tokio_stream::StreamExt;
@@ -22,6 +23,10 @@ impl GroupApiMongoAdapter {
     pub fn new(db: mongodb::Database) -> Self {
         Self { db }
     }
+
+    pub fn new_with(client: Client) -> Self {
+        Self::new(client.database("swc"))
+    }
 }
 
 #[async_trait]
@@ -36,9 +41,14 @@ impl GroupApi for GroupApiMongoAdapter {
 
     async fn create_group(&self, create_spec: CreateGroupSpec) -> Result<Group, Error> {
         let collection = self.db.collection("groups");
+        let members = create_spec
+            .users
+            .map(|users| users.into_iter().map(User::from).collect::<Vec<_>>());
         let group = Group {
             id: None,
             name: Some(create_spec.name),
+            simplify_by_default: Some(true),
+            members,
             ..Group::default()
         };
         let inserted_group = collection.insert_one(group.clone(), None).await?;
@@ -69,7 +79,7 @@ impl GroupApi for GroupApiMongoAdapter {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Group {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
@@ -105,7 +115,7 @@ pub struct Group {
 #[serde(rename_all = "camelCase")]
 pub struct User {
     /// User ID.
-    pub id: Option<i64>,
+    pub id: Option<String>,
 
     /// User's first name.
     pub first_name: Option<String>,
@@ -123,6 +133,16 @@ pub struct User {
 
     /// User's balance in each currency.
     pub balance: Option<Vec<Balance>>,
+}
+
+impl From<GroupUser> for User {
+    fn from(group_user: GroupUser) -> User {
+        Self {
+            id: Some(group_user.user_id),
+            first_name: group_user.first_name,
+            ..User::default()
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -143,6 +163,7 @@ pub struct Debt {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateGroupSpec {
     /// Group name.
     pub name: String,
@@ -153,8 +174,34 @@ pub struct CreateGroupSpec {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GroupUser {
-    pub user_id: i64,
+    pub user_id: String,
 
     pub first_name: Option<String>,
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn should_convert_to_create_spec() {
+        let json = r#"
+            {
+              "name": "group1",
+              "users": [
+                {
+                  "userId": "user1",
+                  "firstName": "John"
+                }
+              ]
+            }
+            "#;
+        let spec: super::CreateGroupSpec = serde_json::from_str(json).unwrap();
+        assert_eq!(spec.name, "group1");
+        assert_eq!(spec.users.as_ref().unwrap().len(), 1usize);
+        let users = spec.users.unwrap();
+        let first = users.first().unwrap();
+        assert_eq!(&first.user_id, "user1");
+        assert_eq!(first.first_name, Some("John".to_string()));
+    }
 }

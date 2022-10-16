@@ -2,43 +2,42 @@ extern crate pretty_env_logger;
 
 use dotenv::dotenv;
 use std::env;
-use swc::routes;
-use swc::state::State;
-use tide::log;
-use tokio::io;
+use std::net::SocketAddr;
+use swc::filters;
+use warp::Filter;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    if let Ok(value) = env::var("ENV") {
+        if value == "LOCAL" {
+            println!("Using local env");
+            dotenv().ok();
+        }
+    }
+    if env::var_os("RUST_LOG").is_none() {
+        // Set `RUST_LOG=todos=debug` to see debug logs,
+        // this only shows access logs.
+        env::set_var("RUST_LOG", "contacts=info");
+    }
+    if env::var_os("ENV").is_none() {
+        env::set_var("ENV", "LOCAL");
+    }
     pretty_env_logger::init();
-    match env::args().nth(1) {
-        Some(value) => {
-            if value == "LOCAL" {
-                log::info!("Using local env");
-                dotenv().ok();
-            }
-        }
-        None => {
-            println!("Received no value from ENV param");
-        }
-    };
     log::info!("Starting server");
     let host = env::var("HOST").expect("Missing HOST env var");
     let port = env::var("PORT").expect("Missing PORT env var");
+
+    let server_details = format!("{}:{}", host, port);
+    let server: SocketAddr = server_details
+        .parse()
+        .expect("Unable to parse socket address");
     let mongo_url = env::var("MONGO_URL").expect("Missing MONGO_URL env var");
-    let _server = server(host, port, mongo_url).await;
+    // GET /hello/warp => 200 OK with body "Hello, warp!"
 
+    let client = mongodb::Client::with_uri_str(&mongo_url).await?;
+    let api = filters::filters(client);
+
+    let routes = api.with(warp::log("groups"));
+    warp::serve(routes).run(server).await;
     Ok(())
-}
-
-async fn server(host: String, port: String, mongo_url: String) -> io::Result<()> {
-    let state = State::new(&mongo_url).await.expect("Can not create state");
-    let mut server = tide::with_state(state);
-    server
-        .at("/group")
-        .post(routes::create_group)
-        .at("/health")
-        .get(|_req: tide::Request<State>| async move { Ok("Ok".to_string()) });
-
-    let http_server = server.listen(format!("{}:{}", host, port));
-    http_server.await
 }
