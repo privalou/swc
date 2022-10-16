@@ -49,6 +49,8 @@ impl GroupApi for GroupApiMongoAdapter {
             name: Some(create_spec.name),
             simplify_by_default: Some(true),
             members,
+            original_debts: Some(vec![]),
+            simplified_debts: Some(vec![]),
             ..Group::default()
         };
         let inserted_group = collection.insert_one(group.clone(), None).await?;
