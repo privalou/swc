@@ -3,11 +3,6 @@ use swc::service::expense::{CreateExpenseSpec, ExpenseApiMongoAdapter, ExpensesA
 use swc::service::user::{CreateUserSpec, UserApi, UserApiMongoAdapter};
 use testcontainers::{clients, images};
 
-mod filter_it;
-mod service {
-    mod expense_it;
-}
-
 #[tokio::test]
 async fn calculation_split_equally_for_three_users() {
     let docker = clients::Cli::default();

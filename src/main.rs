@@ -3,7 +3,7 @@ extern crate pretty_env_logger;
 use dotenv::dotenv;
 use std::env;
 use std::net::SocketAddr;
-use swc::filters;
+use swc::filter;
 use warp::Filter;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // GET /hello/warp => 200 OK with body "Hello, warp!"
 
     let client = mongodb::Client::with_uri_str(&mongo_url).await?;
-    let api = filters::filters(client);
+    let api = filter::filters(client);
 
     let routes = api.with(warp::log("groups"));
     warp::serve(routes).run(server).await;

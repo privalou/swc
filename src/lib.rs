@@ -16,6 +16,5 @@
     variant_size_differences
 )]
 
-pub mod filters;
+pub mod filter;
 pub mod service;
-pub mod state;
