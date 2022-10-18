@@ -1,0 +1,72 @@
+on: [ push, pull_request ]
+
+name: Main flow
+
+env:
+  RUST_VERSION: nightly-2022-09-18
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: set up rust ${{ env.RUST_VERSION }}
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.RUST_VERSION }}
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          command: check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          command: clippy
+          args: -- -D warnings
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          command: test
+
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          command: build
+          args: --verbose
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PWD }}
+
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          push: true
+          tags: ghcr.io/privalou/swc:latest
