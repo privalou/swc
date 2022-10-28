@@ -1,5 +1,5 @@
 use mongodb::Client;
-use swc::filter::filters;
+use swc::route::routes;
 use swc::service::group::{CreateGroupSpec, GroupUser};
 use testcontainers::{clients, images};
 use warp::test::request;
@@ -21,7 +21,7 @@ async fn test_create_group() {
         .method("POST")
         .path("/groups")
         .json(&create_group_spec)
-        .reply(&filters(client))
+        .reply(&routes(client))
         .await;
     assert_eq!(res.status(), 200);
 }

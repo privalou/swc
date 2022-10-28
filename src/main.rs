@@ -4,7 +4,7 @@ use dotenv::dotenv;
 
 use std::env;
 use std::net::ToSocketAddrs;
-use swc::filter;
+use swc::route::routes;
 use warp::Filter;
 
 #[tokio::main]
@@ -31,7 +31,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let mongo_url = env::var("MONGO_URL").expect("Missing MONGO_URL env var");
     let client = mongodb::Client::with_uri_str(&mongo_url).await?;
 
-    let api = filter::filters(client);
+    let api = routes(client);
 
     let routes = api.with(warp::log("groups"));
     warp::serve(routes).run(server).await;

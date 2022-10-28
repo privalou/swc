@@ -1,16 +1,11 @@
 use crate::service::group::CreateGroupSpec;
 use mongodb::Client;
 use warp::Filter;
+use crate::route::with_client;
 
-pub fn filters(
+pub fn groups(
     client: Client,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    groups(client).or(health())
-}
-
-fn groups(
-    client: Client,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
     warp::path!("groups")
         .and(warp::post())
         .and(json_body())
@@ -18,21 +13,9 @@ fn groups(
         .and_then(handlers::create_group)
 }
 
-fn health() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("health")
-        .and(warp::get())
-        .map(|| warp::http::StatusCode::OK)
-        .with(warp::cors().allow_any_origin())
-}
 
-fn json_body() -> impl Filter<Extract = (CreateGroupSpec,), Error = warp::Rejection> + Clone {
+fn json_body() -> impl Filter<Extract=(CreateGroupSpec, ), Error=warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-}
-
-fn with_client(
-    client: Client,
-) -> impl Filter<Extract = (Client,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || client.clone())
 }
 
 mod handlers {

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
-use mongodb::{bson, Database};
+use mongodb::{bson, Client, Database};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -19,7 +19,7 @@ pub struct ExpenseApiMongoAdapter {
 pub trait ExpensesApi {
     async fn get_expense(&self, id: String) -> Result<Expense, Error>;
     async fn list_expenses(&self, request: ListExpensesRequest) -> Result<ExpensesResponse, Error>;
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error>;
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error>;
     async fn update_expense(
         &self,
         id: String,
@@ -32,6 +32,10 @@ pub trait ExpensesApi {
 impl ExpenseApiMongoAdapter {
     pub fn new(db: Database) -> Self {
         Self { db }
+    }
+
+    pub fn new_with(client: Client) -> Self {
+        Self::new(client.database("swc"))
     }
 }
 
@@ -68,7 +72,7 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
 
     /// Create a new expense. expense is saved to the dedicated collection and record in the balance
     /// collection is updated
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error> {
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error> {
         let expense = ExpensesCalculator::new()
             .create_expense(&expense)
             .expect("Can not create expense");
@@ -78,9 +82,9 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             .collection("expenses")
             .insert_one(expense_document, option)
             .await?;
-        Ok(Expense {
+        Ok(ExpenseEntity {
             id: Some(expense_created.inserted_id.as_object_id().unwrap()),
-            ..expense
+            expense,
         })
     }
 
@@ -119,12 +123,17 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Expense {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpenseEntity {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
 
+    pub expense: Expense,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Expense {
     pub cost: Option<String>,
 
     pub description: Option<String>,
