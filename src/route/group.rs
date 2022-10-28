@@ -1,11 +1,11 @@
+use crate::route::with_client;
 use crate::service::group::CreateGroupSpec;
 use mongodb::Client;
 use warp::Filter;
-use crate::route::with_client;
 
 pub fn groups(
     client: Client,
-) -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("groups")
         .and(warp::post())
         .and(json_body())
@@ -13,8 +13,7 @@ pub fn groups(
         .and_then(handlers::create_group)
 }
 
-
-fn json_body() -> impl Filter<Extract=(CreateGroupSpec, ), Error=warp::Rejection> + Clone {
+fn json_body() -> impl Filter<Extract = (CreateGroupSpec,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 

@@ -3,7 +3,10 @@ use swc::service::expense::{CreateExpenseSpec, ExpenseApiMongoAdapter, ExpensesA
 use swc::service::user::{CreateUserSpec, UserApi, UserApiMongoAdapter};
 use testcontainers::{clients, images};
 
-mod filter_it;
+mod route {
+    mod expense_it;
+    mod group_it;
+}
 mod service {
     mod expense_it;
 }

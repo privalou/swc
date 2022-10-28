@@ -5,7 +5,7 @@ use testcontainers::{clients, images};
 use warp::test::request;
 
 #[tokio::test]
-async fn test_create_group() {
+async fn create_group() {
     let docker = clients::Cli::default();
     let node = docker.run(images::mongo::Mongo::default());
     let host_port = node.get_host_port_ipv6(27017);

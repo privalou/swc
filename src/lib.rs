@@ -16,5 +16,5 @@
     variant_size_differences
 )]
 
-pub mod service;
 pub mod route;
+pub mod service;
