@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
-use mongodb::{bson, Database};
+use mongodb::{bson, Client, Database};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -19,7 +19,7 @@ pub struct ExpenseApiMongoAdapter {
 pub trait ExpensesApi {
     async fn get_expense(&self, id: String) -> Result<Expense, Error>;
     async fn list_expenses(&self, request: ListExpensesRequest) -> Result<ExpensesResponse, Error>;
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error>;
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error>;
     async fn update_expense(
         &self,
         id: String,
@@ -32,6 +32,10 @@ pub trait ExpensesApi {
 impl ExpenseApiMongoAdapter {
     pub fn new(db: Database) -> Self {
         Self { db }
+    }
+
+    pub fn new_with(client: Client) -> Self {
+        Self::new(client.database("swc"))
     }
 }
 
@@ -68,7 +72,7 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
 
     /// Create a new expense. expense is saved to the dedicated collection and record in the balance
     /// collection is updated
-    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<Expense, Error> {
+    async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error> {
         let expense = ExpensesCalculator::new()
             .create_expense(&expense)
             .expect("Can not create expense");
@@ -78,9 +82,9 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
             .collection("expenses")
             .insert_one(expense_document, option)
             .await?;
-        Ok(Expense {
+        Ok(ExpenseEntity {
             id: Some(expense_created.inserted_id.as_object_id().unwrap()),
-            ..expense
+            expense,
         })
     }
 
@@ -119,12 +123,17 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Expense {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpenseEntity {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
 
+    pub expense: Expense,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Expense {
     pub cost: Option<String>,
 
     pub description: Option<String>,
@@ -309,16 +318,9 @@ pub struct UpdateExpenseSpec {
 
 /// User with share information associated with the expense.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserShare {
     pub user: Option<User>,
-
-    pub user_id: Option<String>,
-
-    pub first_name: Option<String>,
-
-    pub last_name: Option<String>,
-
-    pub email: Option<String>,
 
     pub paid_share: Option<String>,
 
@@ -330,7 +332,6 @@ pub struct UserShare {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-    #[serde(rename = "_id")]
     pub id: Option<String>,
 
     pub first_name: Option<String>,
@@ -403,11 +404,13 @@ impl ShareCalculator {
         let payer_net = cost - common_share;
 
         let payer_share: UserShare = UserShare {
-            user_id: Some(payer_id.clone()),
+            user: Some(User {
+                id: Some(payer_id.clone()),
+                ..User::default()
+            }),
             paid_share: Some(format!("{0:.2}", cost)),
             owed_share: Some(format!("{0:.2}", common_share)),
             net_balance: Some(format!("{0:.2}", payer_net)),
-            ..Default::default()
         };
 
         let debt_net = common_share * -1_f64;
@@ -416,11 +419,13 @@ impl ShareCalculator {
             .filter(|&user_id| user_id != &payer_id)
             .map(|user_id| {
                 let user_share: UserShare = UserShare {
-                    user_id: Some(user_id.clone()),
+                    user: Some(User {
+                        id: Some(user_id.clone()),
+                        ..User::default()
+                    }),
                     paid_share: Some("0.00".to_string()),
                     owed_share: Some(format!("{0:.2}", common_share)),
                     net_balance: Some(format!("{0:.2}", debt_net)),
-                    ..Default::default()
                 };
                 user_share
             })
@@ -453,7 +458,7 @@ mod test {
 
         let user1 = result
             .iter()
-            .find(|user| user.user_id == Some("1".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("1".to_string()))
             .unwrap();
         assert_eq!(user1.paid_share, Some("42.00".to_string()));
         assert_eq!(user1.owed_share, Some("14.00".to_string()));
@@ -461,7 +466,7 @@ mod test {
 
         let user2 = result
             .iter()
-            .find(|user| user.user_id == Some("2".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("2".to_string()))
             .unwrap();
         assert_eq!(user2.paid_share, Some("0.00".to_string()));
         assert_eq!(user2.owed_share, Some("14.00".to_string()));
@@ -469,7 +474,7 @@ mod test {
 
         let user3 = result
             .iter()
-            .find(|user| user.user_id == Some("3".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("3".to_string()))
             .unwrap();
         assert_eq!(user3.paid_share, Some("0.00".to_string()));
         assert_eq!(user3.owed_share, Some("14.00".to_string()));
@@ -488,7 +493,7 @@ mod test {
 
         let user1 = result
             .iter()
-            .find(|user| user.user_id == Some("1".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("1".to_string()))
             .unwrap();
         assert_eq!(user1.paid_share, Some("42.00".to_string()));
         assert_eq!(user1.owed_share, Some("42.00".to_string()));
@@ -512,7 +517,7 @@ mod test {
 
         let user1 = result
             .iter()
-            .find(|user| user.user_id == Some("1".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("1".to_string()))
             .unwrap();
         assert_eq!(user1.paid_share, Some("42.00".to_string()));
         assert_eq!(user1.owed_share, Some("10.50".to_string()));
@@ -520,7 +525,7 @@ mod test {
 
         let user2 = result
             .iter()
-            .find(|user| user.user_id == Some("2".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("2".to_string()))
             .unwrap();
         assert_eq!(user2.paid_share, Some("0.00".to_string()));
         assert_eq!(user2.owed_share, Some("10.50".to_string()));
@@ -528,7 +533,7 @@ mod test {
 
         let user3 = result
             .iter()
-            .find(|user| user.user_id == Some("3".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("3".to_string()))
             .unwrap();
         assert_eq!(user3.paid_share, Some("0.00".to_string()));
         assert_eq!(user3.owed_share, Some("10.50".to_string()));
@@ -536,7 +541,7 @@ mod test {
 
         let user4 = result
             .iter()
-            .find(|user| user.user_id == Some("4".to_string()))
+            .find(|share| share.user.as_ref().unwrap().id == Some("4".to_string()))
             .unwrap();
         assert_eq!(user4.paid_share, Some("0.00".to_string()));
         assert_eq!(user4.owed_share, Some("10.50".to_string()));
@@ -565,10 +570,13 @@ mod test {
         );
         let shares = expense.users.expect("No Share Found For Expense");
         assert_eq!(shares.len(), 1);
-        let share = shares.first();
-        assert_eq!(share.unwrap().user_id, Some("1".to_string()));
-        assert_eq!(share.unwrap().paid_share, Some("42.00".to_string()));
-        assert_eq!(share.unwrap().owed_share, Some("42.00".to_string()));
-        assert_eq!(share.unwrap().net_balance, Some("0.00".to_string()));
+        let share = shares
+            .first()
+            .expect("No Share Found For Expense")
+            .to_owned();
+        assert_eq!(share.user.expect("No User").id, Some("1".to_string()));
+        assert_eq!(share.paid_share, Some("42.00".to_string()));
+        assert_eq!(share.owed_share, Some("42.00".to_string()));
+        assert_eq!(share.net_balance, Some("0.00".to_string()));
     }
 }
