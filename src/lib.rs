@@ -15,6 +15,8 @@
     unused_results,
     variant_size_differences
 )]
-
+#![allow(opaque_hidden_inferred_bound)]
+/// opaque_hidden_inferred_bound is needed because there is an implied bound of
+/// `warp::generic::Tuple`, which is private.
 pub mod route;
 pub mod service;

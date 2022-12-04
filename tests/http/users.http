@@ -1,0 +1,117 @@
+GET http://localhost:8080/health
+
+
+###
+
+POST http://localhost:8080/expenses
+Content-Type: application/json
+
+{
+  "cost": "100",
+  "groupId": "111412",
+  "user": {
+    "id": "123",
+    "firstName": "John"
+  }
+}
+
+
+###
+GET http://localhost:8080/expenses?group_id=111412
+
+
+
+###
+PUT http://localhost:8080/expenses/635c5aa63921b1332adf4f93
+Accept: application/json
+Content-Type: application/json
+
+{
+  "cost": "140",
+  "groupId": "111412",
+  "users": [
+    {
+      "user": {
+        "id": "2222"
+      },
+      "paidShare": "80",
+      "owedShare": "70",
+      "netBalance": "10"
+    },
+    {
+      "user": {
+        "id": "123"
+      },
+      "paidShare": "60",
+      "owedShare": "70",
+      "netBalance": "-10"
+    }
+  ]
+}
+
+
+###
+
+
+GET https://secure.splitwise.com/api/v3.0/get_expenses?visible=true&order=date&limit=25
+Accept: application/json, text/javascript, */*; q=0.01
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Host: secure.splitwise.com
+Referer: https://secure.splitwise.com/
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+X-Requested-With: XMLHttpRequest
+
+###
+
+
+GET https://secure.splitwise.com/api/v3.0/get_groups
+Accept: application/json, text/javascript, */*; q=0.01
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Host: secure.splitwise.com
+Referer: https://secure.splitwise.com/
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+X-Requested-With: XMLHttpRequest
+
+###
+
+
+#Request Data
+#MIME Type: application/x-www-form-urlencoded
+#cost: 600
+#currency_code: USD
+#group_id: 28910284
+#users__0__user_id: 45994350
+#users__0__paid_share: 600.00
+#users__0__owed_share: 300.00
+#users__1__user_id: 43573645
+#users__1__paid_share: 0.00
+#users__1__owed_share: 300.00
+#category_id: 18
+#id: 1988874991
+#description: 29.10.2022
+#repeats: false
+#email_reminder: false
+#email_reminder_in_advance: -1
+#details: Lorem ipsum
+#payment: false
+#creation_method: equal
+#transaction_method: offline
+#date: 2022-10-28T22:33:46Z
+POST https://secure.splitwise.com/api/v3.0/update_expense/1988874991
+Accept: application/json, text/javascript, */*; q=0.01
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Accept-Encoding: gzip, deflate, br
+Host: secure.splitwise.com
+Origin: https://secure.splitwise.com
+Referer: https://secure.splitwise.com/
+Connection: keep-alive
+X-Requested-With: XMLHttpRequest
+Content-Type: application/x-www-form-urlencoded
+
+cost=600&currency_code=USD&group_id=28910284&users__0__user_id=45994350&users__0__paid_share=600.00&users__0__owed_share=300.00&users__1__user_id=43573645&users__1__paid_share=0.00&users__1__owed_share=300.00&category_id=18&id=1988874991&description=29.10.2022&repeats=false&email_reminder=false&email_reminder_in_advance=-1&details=Lorem+ipsum&payment=false&creation_method=equal&transaction_method=offline&date=2022-10-28T22%3A33%3A46Z
+
+###
+
+

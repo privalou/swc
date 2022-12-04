@@ -3,7 +3,7 @@ on: [ push, pull_request ]
 name: Main flow
 
 env:
-  RUST_VERSION: nightly-2022-09-18
+  RUST_VERSION: nightly-2022-12-10
 
 jobs:
 
@@ -68,5 +68,6 @@ jobs:
         uses: docker/build-push-action@v3
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
+          file: docker/Dockerfile
           push: true
           tags: ghcr.io/privalou/swc:latest

@@ -1,0 +1,527 @@
+[
+  {
+    "_id": {
+      "$oid": "635c5aa63921b1332adf4f93"
+    },
+    "cost": "100.00",
+    "description": null,
+    "date": "2022-10-28T22:41:42.504490Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-10-28T22:41:42.504485Z",
+    "createdBy": {
+      "id": "2222",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-10-28T22:41:42.504489Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": null,
+        "userId": "2222",
+        "firstName": null,
+        "lastName": null,
+        "email": null,
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "635c5c15eaa682ff93f0eb1a"
+    },
+    "cost": "100.00",
+    "description": null,
+    "date": "2022-10-28T22:47:48.952150Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-10-28T22:47:48.952105Z",
+    "createdBy": {
+      "id": "2222",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-10-28T22:47:48.952150Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "2222",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398a531f07556f1926bc9e3"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T16:15:45.239836Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T16:15:45.239776Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T16:15:45.239835Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398ab3b00fa885ac3a245bf"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T16:41:31.070588Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T16:41:31.070562Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T16:41:31.070587Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398ab7822b81003d788e2d8"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T16:42:32.238228Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T16:42:32.238197Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T16:42:32.238227Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398af131fc892f43d6c513a"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T16:57:55.335715Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T16:57:55.335674Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T16:57:55.335714Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398af38a85d8d8fee5cc1f3"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T16:58:32.346979Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T16:58:32.346938Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T16:58:32.346978Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398d1c0cb63eee0ac80fe38"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T19:25:48.322449Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T19:25:48.322388Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T19:25:48.322449Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398d2ff2cebdfea36ec4585"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T19:31:10.868799Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T19:31:10.868748Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T19:31:10.868799Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398d64d2cebdfea36ec4586"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T19:45:17.907018Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T19:45:17.907013Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T19:45:17.907017Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398f5f81a51b5e585bc8ad3"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T22:00:24.640725Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T22:00:24.640665Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T22:00:24.640725Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6398f7521a51b5e585bc8ad4"
+    },
+    "cost": "100",
+    "description": null,
+    "date": "2022-12-13T22:06:10.261183Z",
+    "repeatInterval": null,
+    "currencyCode": null,
+    "groupId": "111412",
+    "repeats": null,
+    "payment": null,
+    "transactionMethod": null,
+    "transactionStatus": null,
+    "repayments": null,
+    "createdAt": "2022-12-13T22:06:10.261177Z",
+    "createdBy": {
+      "id": "123",
+      "firstName": "John",
+      "email": null,
+      "defaultCurrency": null,
+      "balance": null,
+      "updatedAt": null
+    },
+    "updatedAt": "2022-12-13T22:06:10.261182Z",
+    "updatedBy": null,
+    "deletedAt": null,
+    "deletedBy": null,
+    "users": [
+      {
+        "user": {
+          "id": "123",
+          "firstName": null,
+          "email": null,
+          "defaultCurrency": null,
+          "balance": null,
+          "updatedAt": null
+        },
+        "paidShare": "100.00",
+        "owedShare": "100.00",
+        "netBalance": "0.00"
+      }
+    ]
+  }
+]

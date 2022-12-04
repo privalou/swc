@@ -8,6 +8,10 @@ mod route {
     mod group_it;
 }
 mod service {
+    mod aggregate {
+        mod user_expense_aggregate_it;
+    }
+    mod balance_it;
     mod expense_it;
 }
 
@@ -16,7 +20,7 @@ async fn calculation_split_equally_for_three_users() {
     let docker = clients::Cli::default();
     let node = docker.run(images::mongo::Mongo::default());
     let host_port = node.get_host_port_ipv6(27017);
-    let url = format!("mongodb://localhost:{}/", host_port);
+    let url = format!("mongodb://localhost:{host_port}/");
     let database = mongodb::Client::with_uri_str(url)
         .await
         .unwrap()
@@ -73,7 +77,7 @@ async fn create_users(
     for i in 0..count {
         let user = user_service
             .create_user(CreateUserSpec {
-                first_name: format!("test{}", i),
+                first_name: format!("test{i}"),
                 ..CreateUserSpec::default()
             })
             .await?;

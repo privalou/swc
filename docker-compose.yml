@@ -1,8 +1,9 @@
 version: "3"
 services:
   swc:
-    build: .
-#    restart: always
+    build:
+        context: .
+        dockerfile: ./docker/Dockerfile
     container_name: swc-web-server
     ports:
       - "8080:8080"

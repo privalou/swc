@@ -21,7 +21,7 @@ async fn main() -> Result<(), anyhow::Error> {
     log::info!("Starting server");
     let host = env::var("HOST").expect("Missing HOST env var");
     let port = env::var("PORT").expect("Missing PORT env var");
-    let server_details = format!("{}:{}", host, port);
+    let server_details = format!("{host}:{port}");
     let server = server_details
         .clone()
         .to_socket_addrs()
@@ -29,11 +29,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .next()
         .expect("Unable to parse socket address");
     let mongo_url = env::var("MONGO_URL").expect("Missing MONGO_URL env var");
+
     let client = mongodb::Client::with_uri_str(&mongo_url).await?;
-
-    let api = routes(client);
-
-    let routes = api.with(warp::log("groups"));
+    let routes = routes(client).with(warp::log("groups"));
     warp::serve(routes).run(server).await;
     Ok(())
 }

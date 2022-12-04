@@ -9,7 +9,7 @@ async fn create_expense() {
     let docker = clients::Cli::default();
     let node = docker.run(images::mongo::Mongo::default());
     let host_port = node.get_host_port_ipv6(27017);
-    let url = format!("mongodb://localhost:{}/", host_port);
+    let url = format!("mongodb://localhost:{host_port}/");
     let client = Client::with_uri_str(url)
         .await
         .expect("Failed to connect to mongo");

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Document};
+use mongodb::options::FindOneAndUpdateOptions;
 use mongodb::{bson, Client, Database};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -20,11 +21,7 @@ pub trait ExpensesApi {
     async fn get_expense(&self, id: String) -> Result<Expense, Error>;
     async fn list_expenses(&self, request: ListExpensesRequest) -> Result<ExpensesResponse, Error>;
     async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error>;
-    async fn update_expense(
-        &self,
-        id: String,
-        spec: UpdateExpenseSpec,
-    ) -> Result<Vec<Expense>, Error>;
+    async fn update_expense(&self, id: String, spec: UpdateExpenseSpec) -> Result<Expense, Error>;
     async fn delete_expense(&self, id: i64) -> Result<(), Error>;
     async fn restore_expense(&self, id: i64) -> Result<(), Error>;
 }
@@ -36,6 +33,20 @@ impl ExpenseApiMongoAdapter {
 
     pub fn new_with(client: Client) -> Self {
         Self::new(client.database("swc"))
+    }
+
+    fn build_update_expense_doc(update_expense_spec: UpdateExpenseSpec) -> Vec<Document> {
+        let update_bson = bson::to_bson(&update_expense_spec).expect("Failed to serialize");
+        let mut update_pipeline = Vec::new();
+        update_pipeline.push(doc! {
+            "$set": &update_bson
+        });
+        update_pipeline.push(doc! {
+            "$set": {
+                "updatedAt": bson::to_bson(&Utc::now()).expect("Failed to serialize")
+            }
+        });
+        update_pipeline
     }
 }
 
@@ -57,11 +68,20 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
         Ok(expense.unwrap())
     }
 
-    async fn list_expenses(
-        &self,
-        _request: ListExpensesRequest,
-    ) -> Result<ExpensesResponse, Error> {
-        let mut cursor = self.db.collection("expenses").find(None, None).await?;
+    async fn list_expenses(&self, request: ListExpensesRequest) -> Result<ExpensesResponse, Error> {
+        let mut cursor = self
+            .db
+            .collection("expenses")
+            .find(
+                doc! {
+                    "groupId": request.group_id,
+                    "deletedAt": doc! {
+                        "$exists": false
+                    }
+                },
+                None,
+            )
+            .await?;
         let mut expenses = Vec::new();
         while let Some(result) = cursor.next().await {
             let expense = result?;
@@ -70,8 +90,6 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
         Ok(ExpensesResponse { expenses })
     }
 
-    /// Create a new expense. expense is saved to the dedicated collection and record in the balance
-    /// collection is updated
     async fn create_expense(&self, expense: CreateExpenseSpec) -> Result<ExpenseEntity, Error> {
         let expense = ExpensesCalculator::new()
             .create_expense(&expense)
@@ -92,26 +110,26 @@ impl ExpensesApi for ExpenseApiMongoAdapter {
         &self,
         id: String,
         update_expense_spec: UpdateExpenseSpec,
-    ) -> Result<Vec<Expense>, Error> {
-        let filter = doc! {
-            "_id": ObjectId::from_str(&id).expect("Invalid id")
-        };
-
-        let set_bson = bson::to_bson(&update_expense_spec)?;
-
-        let update = doc! {
-            "$set": set_bson
-        };
-
-        let option = None;
-
-        let _update_result = self
+    ) -> Result<Expense, Error> {
+        let document = Self::build_update_expense_doc(update_expense_spec);
+        let update_result = self
             .db
             .collection::<Document>("expenses")
-            .update_one(filter, update, option)
+            .find_one_and_update(
+                doc! {
+                    "_id": ObjectId::from_str(&id).expect("Invalid id")
+                },
+                document,
+                FindOneAndUpdateOptions::builder()
+                    .return_document(Some(mongodb::options::ReturnDocument::After))
+                    .build(),
+            )
             .await?;
 
-        Ok(vec![])
+        Ok(
+            bson::from_document(update_result.expect("Expense not found"))
+                .expect("Can not deserialize expense"),
+        )
     }
 
     async fn delete_expense(&self, _id: i64) -> Result<(), Error> {
@@ -197,15 +215,15 @@ pub struct ExpensesResponse {
     pub expenses: Vec<Expense>,
 }
 
-#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct ListExpensesRequest {
     /// If provided, only expenses in that group will be returned, and
     /// `friend_id` will be ignored.
-    pub group_id: Option<i64>,
+    pub group_id: Option<String>,
 
     /// ID of another user. If provided, only expenses between the current and
     /// provided user will be returned.
-    pub friend_id: Option<i64>,
+    pub friend_id: Option<String>,
 
     /// Filter to expenses after this date.
     pub dated_after: Option<DateTime<Utc>>,
@@ -260,7 +278,7 @@ pub enum RepeatInterval {
 
 impl fmt::Display for RepeatInterval {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "{}", format!("{:?}", self).to_lowercase())
+        write!(formatter, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -311,7 +329,6 @@ pub struct UpdateExpenseSpec {
     pub group_id: Option<String>,
 
     /// Users by share if not splitting the expense equally.
-    #[serde(flatten)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub users: Option<Vec<UserShare>>,
 }
@@ -408,9 +425,9 @@ impl ShareCalculator {
                 id: Some(payer_id.clone()),
                 ..User::default()
             }),
-            paid_share: Some(format!("{0:.2}", cost)),
-            owed_share: Some(format!("{0:.2}", common_share)),
-            net_balance: Some(format!("{0:.2}", payer_net)),
+            paid_share: Some(format!("{cost:.2}")),
+            owed_share: Some(format!("{common_share:.2}")),
+            net_balance: Some(format!("{payer_net:.2}")),
         };
 
         let debt_net = common_share * -1_f64;
@@ -424,8 +441,8 @@ impl ShareCalculator {
                         ..User::default()
                     }),
                     paid_share: Some("0.00".to_string()),
-                    owed_share: Some(format!("{0:.2}", common_share)),
-                    net_balance: Some(format!("{0:.2}", debt_net)),
+                    owed_share: Some(format!("{common_share:.2}")),
+                    net_balance: Some(format!("{debt_net:.2}")),
                 };
                 user_share
             })
