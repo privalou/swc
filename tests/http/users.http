@@ -35,16 +35,14 @@ Content-Type: application/json
         "id": "2222"
       },
       "paidShare": "80",
-      "owedShare": "70",
-      "netBalance": "10"
+      "owedShare": "70"
     },
     {
       "user": {
         "id": "123"
       },
       "paidShare": "60",
-      "owedShare": "70",
-      "netBalance": "-10"
+      "owedShare": "70"
     }
   ]
 }

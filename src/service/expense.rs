@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 
 use chrono::{DateTime, Utc};
@@ -298,7 +298,6 @@ pub struct Balance {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateExpenseSpec {
-    /// A string representation of a decimal value, limited to 2 decimal places.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cost: Option<String>,
 
@@ -308,41 +307,27 @@ pub struct UpdateExpenseSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<String>,
 
-    /// The date and time the expense took place. May differ from `created_at`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<DateTime<Utc>>,
 
-    // TODO: Make this an enum
-    /// Cadence at which the expense repeats. One of:
-    /// - `never`
-    /// - `weekly`
-    /// - `fortnightly`
-    /// - `monthly`
-    /// - `yearly`
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub repeat_interval: Option<String>,
+    pub repeat_interval: Option<RepeatInterval>,
 
-    /// A currency code. Must be in the list from `get_currencies`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency_code: Option<String>,
 
     pub group_id: Option<String>,
 
-    /// Users by share if not splitting the expense equally.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub users: Option<Vec<UserShare>>,
 }
 
-/// User with share information associated with the expense.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserShare {
     pub user: Option<User>,
-
     pub paid_share: Option<String>,
-
     pub owed_share: Option<String>,
-
     pub net_balance: Option<String>,
 }
 
@@ -381,7 +366,10 @@ pub struct ShareCalculator {}
 impl Expenses for ExpensesCalculator {
     fn create_expense(&self, create_expense_spec: &CreateExpenseSpec) -> Result<Expense, Error> {
         let user = create_expense_spec.user.clone();
-        let payer_id = user.id.as_ref().expect("No user id");
+        let payer_id = user.id.as_ref().ok_or(anyhow!(
+            "User ID is required to create an expense. User: {:?}",
+            user
+        ))?;
         let share = ShareCalculator::new().equal_share(
             create_expense_spec.cost.clone(),
             payer_id.clone(),
@@ -405,7 +393,6 @@ impl ShareCalculator {
         ShareCalculator {}
     }
 
-    //noinspection RsBorrowChecker
     pub fn equal_share(
         &self,
         cost: String,
@@ -449,6 +436,45 @@ impl ShareCalculator {
             .chain(std::iter::once(payer_share))
             .collect::<Vec<UserShare>>();
         remainder_share
+    }
+
+    pub fn normalize_shares(
+        &self,
+        shares: Vec<UserShare>,
+        cost: String,
+    ) -> Result<Vec<UserShare>, Error> {
+        let cost = cost.parse::<f64>().unwrap();
+        Self::validate_prices(&shares, cost)?;
+        let normalized_shares = shares
+            .iter()
+            .map(|share| {
+                let paid_share = share.paid_share.as_ref().unwrap().parse::<f64>().unwrap();
+                let owed_share = share.owed_share.as_ref().unwrap().parse::<f64>().unwrap();
+                let net_balance = paid_share - owed_share;
+                UserShare {
+                    user: share.user.clone(),
+                    paid_share: Some(format!("{paid_share:.2}")),
+                    owed_share: Some(format!("{owed_share:.2}")),
+                    net_balance: Some(format!("{net_balance:.2}")),
+                }
+            })
+            .collect();
+        Ok(normalized_shares)
+    }
+
+    fn validate_prices(shares: &[UserShare], cost: f64) -> Result<(), Error> {
+        let total_paid: f64 = shares
+            .iter()
+            .map(|share| share.paid_share.clone().unwrap().parse::<f64>().unwrap())
+            .sum();
+        let total_owed: f64 = shares
+            .iter()
+            .map(|share| share.owed_share.clone().unwrap().parse::<f64>().unwrap())
+            .sum();
+        if total_owed != total_paid || total_paid != cost {
+            return Err(anyhow!("Total cost of the expense does not match the sum of shares. Total: {}, Paid: {}, Owed: {}", cost, total_paid, total_owed));
+        }
+        Ok(())
     }
 }
 
@@ -595,5 +621,93 @@ mod test {
         assert_eq!(share.paid_share, Some("42.00".to_string()));
         assert_eq!(share.owed_share, Some("42.00".to_string()));
         assert_eq!(share.net_balance, Some("0.00".to_string()));
+    }
+
+    #[test]
+    fn normalize_empty_shares() {
+        use super::ShareCalculator;
+        let res = ShareCalculator::new()
+            .normalize_shares(vec![], "0".to_string())
+            .expect("Failed to normalize shares");
+        assert_eq!(res.len(), 0);
+    }
+
+    #[test]
+    fn normalize_unequal_shares() {
+        use super::{ShareCalculator, User, UserShare};
+        let calculator = ShareCalculator::new();
+        let shares = vec![
+            UserShare {
+                user: Some(User {
+                    id: Some("1".to_string()),
+                    ..Default::default()
+                }),
+                paid_share: Some("700.00".to_string()),
+                owed_share: Some("140.00".to_string()),
+                net_balance: None,
+            },
+            UserShare {
+                user: Some(User {
+                    id: Some("2".to_string()),
+                    ..Default::default()
+                }),
+                paid_share: Some("0.00".to_string()),
+                owed_share: Some("70.00".to_string()),
+                net_balance: None,
+            },
+            UserShare {
+                user: Some(User {
+                    id: Some("3".to_string()),
+                    ..Default::default()
+                }),
+                paid_share: Some("0".to_string()),
+                owed_share: Some("210".to_string()),
+                net_balance: None,
+            },
+            UserShare {
+                user: Some(User {
+                    id: Some("4".to_string()),
+                    ..Default::default()
+                }),
+                paid_share: Some("0.00".to_string()),
+                owed_share: Some("280".to_string()),
+                net_balance: None,
+            },
+        ];
+        let result = calculator
+            .normalize_shares(shares, "700".to_string())
+            .expect("Failed to normalize shares");
+        assert_eq!(result.len(), 4);
+        let user_1_share = result
+            .iter()
+            .find(|share| share.user.as_ref().unwrap().id == Some("1".to_string()))
+            .unwrap();
+        assert_eq!(user_1_share.paid_share, Some("700.00".to_string()));
+        assert_eq!(user_1_share.owed_share, Some("140.00".to_string()));
+        assert_eq!(user_1_share.net_balance, Some("560.00".to_string()));
+
+        let user_2_share = result
+            .iter()
+            .find(|share| share.user.as_ref().unwrap().id == Some("2".to_string()))
+            .unwrap();
+        assert_eq!(user_2_share.paid_share, Some("0.00".to_string()));
+        assert_eq!(user_2_share.owed_share, Some("70.00".to_string()));
+        assert_eq!(user_2_share.net_balance, Some("-70.00".to_string()));
+
+        let user_3_share = result
+            .iter()
+            .find(|share| share.user.as_ref().unwrap().id == Some("3".to_string()))
+            .unwrap();
+        assert_eq!(user_3_share.paid_share, Some("0.00".to_string()));
+        assert_eq!(user_3_share.owed_share, Some("210.00".to_string()));
+        assert_eq!(user_3_share.net_balance, Some("-210.00".to_string()));
+
+        let user_4_share = result
+            .iter()
+            .find(|share| share.user.as_ref().unwrap().id == Some("4".to_string()))
+            .unwrap();
+        assert_eq!(user_4_share.paid_share, Some("0.00".to_string()));
+        assert_eq!(user_4_share.owed_share, Some("280.00".to_string()));
+        assert_eq!(user_4_share.net_balance, Some("-280.00".to_string()));
     }
 }
